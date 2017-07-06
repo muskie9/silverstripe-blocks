@@ -150,7 +150,7 @@ class Block extends DataObject implements PermissionProvider
                 $self->blockManager = singleton(BlockManager::class);
             }
 
-            // ClassNmae - block type/class field
+            // ClassName - block type/class field
             $classes = $self->blockManager->getBlockClasses();
             $fields->addFieldToTab('Root.Main', DropdownField::create('ClassName', _t('Block.BlockType', 'Block Type'), $classes)->addExtraClass('block-type'), 'Title');
 
@@ -171,7 +171,7 @@ class Block extends DataObject implements PermissionProvider
                     $blockAreaField->setEmptyString('(Select one)');
                 }
 
-                if (BlockManager::config()->get('block_area_preview') && $this->owner->hasExtension(BlocksSiteTreeExtension::class)) {
+                if (BlockManager::config()->get('block_area_preview')) {
                     $blockAreaField->setRightTitle($currentPage->areasPreviewButton());
                 }
             }
