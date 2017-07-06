@@ -2,6 +2,7 @@
 
 namespace SheaDawson\Blocks\Extensions;
 
+use SilverStripe\Core\Manifest\ModuleLoader;
 use SilverStripe\View\Requirements;
 use SilverStripe\Core\Extension;
 
@@ -16,10 +17,12 @@ class BlocksContentControllerExtension extends Extension
 
     public function onAfterInit()
     {
+    	$ssAdmin = ModuleLoader::getModule('silverstripe-admin');
+    	$blocksModule = ModuleLoader::getModule('blocks');
         if ($this->owner->data()->canEdit() && $this->owner->getRequest()->getVar('block_preview') == 1) {
-            Requirements::javascript(THIRDPARTY_DIR.'/jquery/jquery.js');
-            Requirements::javascript(BLOCKS_DIR.'/javascript/block-preview.js');
-            Requirements::css(BLOCKS_DIR.'/css/block-preview.css');
+            Requirements::javascript($ssAdmin->getRelativeResourcePath('thirdparty/jquery/jquery.js'));
+            Requirements::javascript($blocksModule->getRelativeResourcePath('javascript/block-preview.js'));
+            Requirements::css($blocksModule->getRelativeResourcePath('css/block-preview.css'));
         }
     }
 

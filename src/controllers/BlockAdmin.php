@@ -47,9 +47,12 @@ class BlockAdmin extends ModelAdmin
         return $models;
     }
 
-    /**
-     * @return Form
-     **/
+	/**
+	 * @param null $id
+	 * @param null $fields
+	 *
+	 * @return \SilverStripe\Forms\Form
+	 */
     public function getEditForm($id = null, $fields = null)
     {
         Versioned::set_stage('Stage');

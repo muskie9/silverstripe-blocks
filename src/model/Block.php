@@ -3,6 +3,8 @@
 namespace SheaDawson\Blocks\Model;
 
 use SheaDawson\Blocks\BlockManager;
+use SheaDawson\Blocks\Extensions\BlocksSiteTreeExtension;
+use SilverStripe\CMS\Controllers\CMSPageEditController;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\ORM\FieldType\DBBoolean;
@@ -19,10 +21,12 @@ use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Member;
+use SilverStripe\Security\Security;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\OptionsetField;
 use SilverStripe\Forms\ListboxField;
 use SilverStripe\Forms\Tab;
+use SilverStripe\Core\Manifest\ModuleLoader;
 
 /**
  * Block
@@ -137,12 +141,13 @@ class Block extends DataObject implements PermissionProvider
         $self = $this;
         $this->beforeUpdateCMSFields(function($fields) use($self) {
             /** @var FieldList $fields */
-            Requirements::add_i18n_javascript(BLOCKS_DIR . '/javascript/lang');
+            $blocksModule = ModuleLoader::getModule('blocks');
+            Requirements::add_i18n_javascript($blocksModule->getRelativeResourcePath('javascript/lang'));
 
             // this line is a temporary patch until I can work out why this dependency isn't being
             // loaded in some cases...
             if (!$self->blockManager) {
-                $self->blockManager = singleton("SheaDawson\\Blocks\\BlockManager");
+                $self->blockManager = singleton(BlockManager::class);
             }
 
             // ClassNmae - block type/class field
@@ -150,8 +155,9 @@ class Block extends DataObject implements PermissionProvider
             $fields->addFieldToTab('Root.Main', DropdownField::create('ClassName', _t('Block.BlockType', 'Block Type'), $classes)->addExtraClass('block-type'), 'Title');
 
             // BlockArea - display areas field if on page edit controller
-            if (Controller::curr()->class == 'CMSPageEditController') {
-                $currentPage = Controller::curr()->currentPage();
+	        $controller = Controller::curr();
+	        if ($controller instanceof CMSPageEditController) {
+		        $currentPage = SiteTree::get()->byID($controller->currentPageID());
                 $areas = $self->blockManager->getAreasForPageType($currentPage->ClassName);
                 $fields->addFieldToTab(
                     'Root.Main',
@@ -165,7 +171,7 @@ class Block extends DataObject implements PermissionProvider
                     $blockAreaField->setEmptyString('(Select one)');
                 }
 
-                if (BlockManager::config()->get('block_area_preview')) {
+                if (BlockManager::config()->get('block_area_preview') && $this->owner->hasExtension(BlocksSiteTreeExtension::class)) {
                     $blockAreaField->setRightTitle($currentPage->areasPreviewButton());
                 }
             }
@@ -288,7 +294,7 @@ class Block extends DataObject implements PermissionProvider
     public function canView($member = null)
     {
         if (!$member || !(is_a($member, 'Member')) || is_numeric($member)) {
-            $member = Member::currentUserID();
+            $member = Security::getCurrentUser()->ID;
         }
 
         // admin override
@@ -443,10 +449,12 @@ class Block extends DataObject implements PermissionProvider
     public function isPublishedIcon()
     {
         $obj = DBHTMLText::create();
-        if ($this->isPublished()) {
-            $obj->setValue('<img src="' . FRAMEWORK_ADMIN_DIR . '/images/alert-good.gif" />');
+	    if ($this->isPublished() && $this->isModifiedOnStage) {
+			$obj->setValue('<i class="btn-icon gridfield-icon btn-icon-pencil"></i>');
+		} elseif ($this->isPublished() && !$this->isModifiedOnStage) {
+            $obj->setValue('<i class="btn-icon gridfield-icon btn-icon-accept"></i>');
         } else {
-            $obj->setValue('<img src="' . FRAMEWORK_ADMIN_DIR . '/images/alert-bad.gif" />');
+            $obj->setValue('<i class="btn-icon gridfield-icon btn-icon-pencil"></i>');
         }
         return $obj;
     }

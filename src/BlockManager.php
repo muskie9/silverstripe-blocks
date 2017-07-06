@@ -2,6 +2,8 @@
 
 namespace SheaDawson\Blocks;
 
+use SheaDawson\Blocks\Model\Block;
+use SilverStripe\Core\Object;
 use SilverStripe\ORM\ArrayLib;
 use SilverStripe\SiteConfig\SiteConfig;
 use SilverStripe\Core\Config\Config;
@@ -113,7 +115,7 @@ class BlockManager extends ViewableData
 
 	public function getBlockClasses()
 	{
-		$classes = ArrayLib::valuekey(ClassInfo::subclassesFor("SheaDawson\Blocks\model\Block"));
+		$classes = ArrayLib::valuekey(ClassInfo::subclassesFor(Block::class));
 		array_shift($classes);
 		foreach ($classes as $k => $v) {
 			$classes[$k] = singleton($k)->singular_name();
@@ -127,7 +129,7 @@ class BlockManager extends ViewableData
 	        unset($classes['ContentBlock']);
 	    }
 
-		$disabledArr = Config::inst()->get("BlockManager", 'disabled_blocks') ? Config::inst()->get("BlockManager", 'disabled_blocks') : [];
+		$disabledArr = Config::inst()->get(BlockManager::class, 'disabled_blocks') ? Config::inst()->get(BlockManager::class, 'disabled_blocks') : [];
 		if (isset($config['disabled_blocks'])) {
 		    $disabledArr = array_merge($disabledArr, $config['disabled_blocks']);
 		}
