@@ -23,39 +23,39 @@ class GridFieldConfig_BlockManager extends GridFieldConfig
             $areasFieldSource = $this->blockManager->getAreasForTheme();
         }
 
-        // EditableColumns only makes sense on Saveable parenst (eg Page), or inline changes won't be saved
-        if ($editableRows) {
-            $this->addComponent($editable = new GridFieldEditableColumns());
-            $displayfields = array(
-                'TypeForGridfield' => array('title' => _t('Block.BlockType', 'Block Type'), 'field' => 'LiteralField'),
-                'Title' => array('title' => _t('Block.Title', 'Title'), 'field' => 'ReadonlyField'),
-                'BlockArea' => array(
-                    'title' => _t('Block.BlockArea', 'Block Area').'
-						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
-                        // the &nbsp;s prevent wrapping of dropdowns
-                    'callback' => function () use ($areasFieldSource) {
-                            $areasField = DropdownField::create('BlockArea', 'Block Area', $areasFieldSource);
-                            if (count($areasFieldSource) > 1) {
-                                $areasField->setHasEmptyDefault(true);
-                            }
-                            return $areasField;
-                        },
-                ),
-                'isPublishedIcon' => array('title' => _t('Block.IsPublishedField', 'Published'), 'field' => 'LiteralField'),
-                'UsageListAsString' => array('title' => _t('Block.UsageListAsString', 'Used on'), 'field' => 'LiteralField'),
-            );
+		$this->blockManager = Injector::inst()->get('BlockManager');
+		$controllerClass = Controller::curr()->class;
+		
+		// EditableColumns only makes sense on Saveable parents (eg Page), or inline changes won't be saved
+		if($editableRows){
+			$this->addComponent($editable = new GridFieldEditableColumns());
+			
+			// Get available Areas (for page) or all in case of ModelAdmin
+			$currentPageName = null;
+			if($controllerClass == 'CMSPageEditController'){
+				$currentPage = Controller::curr()->currentPage();
+				$currentPageName = $currentPage->ClassName;
+			}
+			$displayfields = $this->blockManager->getGridDisplayFields($currentPageName, true, $aboveOrBelow);
 
-            if ($aboveOrBelow) {
-                $displayfields['AboveOrBelow'] = array(
-                    'title' => _t('GridFieldConfigBlockManager.AboveOrBelow', 'Above or Below'),
-                    'callback' => function () {
-                        return DropdownField::create('AboveOrBelow', _t('GridFieldConfigBlockManager.AboveOrBelow', 'Above or Below'), BlockSet::config()->get('above_or_below_options'));
-                    },
-                );
-            }
-            $editable->setDisplayFields($displayfields);
-        } else {
-            $this->addComponent($dcols = new GridFieldDataColumns());
+			$editable->setDisplayFields($displayfields);
+		} else {
+			$this->addComponent($dcols = new GridFieldDataColumns());
+			
+			$displayfields = $this->blockManager->getGridDisplayFields();
+			$dcols->setDisplayFields($displayfields);
+			$dcols->setFieldCasting(array("UsageListAsString"=>"HTMLText->Raw"));
+		}
+		
+		$this->addComponent(new GridFieldButtonRow('before'));
+		$this->addComponent(new GridFieldToolbarHeader());
+		$this->addComponent(new GridFieldDetailForm());
+		$this->addComponent($sort = new GridFieldSortableHeader());
+		$this->addComponent($filter = new GridFieldFilterHeader());
+		$this->addComponent(new GridFieldDetailForm());
+		if($controllerClass == 'BlockAdmin' && class_exists('GridFieldCopyButton')){
+			$this->addComponent(new GridFieldCopyButton());
+		}
 
             $displayfields = array(
                 'TypeForGridfield' => array('title' => _t('Block.BlockType', 'Block Type'), 'field' => 'LiteralField'),
@@ -66,7 +66,6 @@ class GridFieldConfig_BlockManager extends GridFieldConfig
             );
             $dcols->setDisplayFields($displayfields);
             $dcols->setFieldCasting(array('UsageListAsString' => 'HTMLText->Raw'));
-        }
 
         $this->addComponent(new GridFieldButtonRow('before'));
         $this->addComponent(new GridFieldToolbarHeader());
