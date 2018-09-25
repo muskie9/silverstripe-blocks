@@ -310,7 +310,9 @@ class BlocksSiteTreeExtension extends SiteTreeExtension
 			$setBlocks = $set->Blocks()->sort('Sort DESC');
 
 			if (!$includeDisabled) {
-				$setBlocks = $setBlocks->exclude('ID', $this->owner->DisabledBlocks()->column('ID'));
+			    if (count($this->owner->DisabledBlocks())) {
+                    $setBlocks = $setBlocks->exclude('ID', $this->owner->DisabledBlocks()->column('ID'));
+                }
 			}
 
 			if ($area) {
